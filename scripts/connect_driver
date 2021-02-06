@@ -1,0 +1,60 @@
+#! /usr/bin/env python3
+
+
+import os
+import subprocess
+import time
+
+import rospy
+import rospkg
+
+from nav_msgs.msg import Odometry
+
+
+
+# As Sphinx takes a while to start its network, if using
+# 
+# n_sphinx_processes = int(subprocess.check_output("ps aux | grep -c sphinx",shell=True))
+
+# if n_sphinx_processes > 3:
+#     driver_wait = 45
+# else:
+#     driver_wait = 0
+drone_type = rospy.get_param('drone_type')
+
+if drone_type=='sphinx':
+    driver_wait = 60
+    ip = '10.202.0.1'
+    while True:
+        try:
+            sphinx_started = rospy.get_param('sphinx_started') # Wait for sphinx drone to be instantiated
+            if sphinx_started:
+                break
+        except:
+            pass
+else:
+    driver_wait = 0
+    ip = '192.168.42.1'
+
+rospy.init_node("connect_driver_node")
+
+def connect_driver(ip):
+    for i in range(driver_wait):
+        rospy.loginfo("Waiting for drone network to start . . . {}".format(driver_wait-i))
+        time.sleep(1)
+    rospy.loginfo("Starting Bebop Driver")
+    driver_cmd = ["roslaunch","bebop_driver","bebop_node.launch","ip:={}".format(ip),"drone_type:=bebop2"]
+    print("driver_cmd = ",driver_cmd)
+    driver_process = subprocess.Popen(driver_cmd, stdout=subprocess.PIPE, universal_newlines=True)
+    odom_data = None
+    while odom_data is None:
+        try:
+            odom_data = rospy.wait_for_message('/bebop/odom',Odometry, timeout=5)
+        except:
+            rospy.loginfo("Waiting for Bebop Driver")
+    
+    rospy.loginfo("Bebop Driver Ready")
+
+
+connect_driver(ip)
+rospy.spin()

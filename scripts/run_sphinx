@@ -10,15 +10,18 @@ import rospkg
 
 def launch_sphinx(world_path,drone_path):
     sphinx_cmd = " ".join(["sphinx",world_path,drone_path])
-    print("Sphinx Cmd ",sphinx_cmd)
+    print("sphinx_cmd = ",sphinx_cmd)
     sphinx_process = subprocess.Popen(sphinx_cmd,shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     for line in iter(sphinx_process.stdout.readline, ""):
         if "All drones instantiated" in line:
-            rospy.loginfo("[GYM] Drone Instantiated")
+            rospy.loginfo("Drone Instantiated")
+            rospy.set_param('sphinx_started', True)
             return
 
     raise RuntimeError("Drone Failed to Instantiate")
 
+
+rospy.init_node("sphinx_node")
 
 rospack = rospkg.RosPack()
 
@@ -26,3 +29,5 @@ drone_path = os.path.join(rospack.get_path('bebop2_control'),"sphinx/bebop2.dron
 world_path = os.path.join(rospack.get_path('bebop2_control'),"sphinx/empty.world")
 
 launch_sphinx(world_path,drone_path)
+
+rospy.spin()
