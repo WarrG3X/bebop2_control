@@ -14,7 +14,7 @@ import subprocess
 
 import rospy
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Empty
+from std_msgs.msg import Empty, Bool
 
 class Velocity(object):
 
@@ -88,6 +88,7 @@ class SimpleKeyTeleop():
         self._land_cmd = rospy.Publisher(self._namespace+'/land', Empty)
         self._reset_cmd = rospy.Publisher(self._namespace+'/reset', Empty)
         self._flt_cmd = rospy.Publisher(self._namespace+'/flattrim', Empty)
+        self._auto_cmd = rospy.Publisher(self._namespace+'/state_change', Bool)
         self._init_cmd = "parrot-gz model -m bebop2 -x 0 -y 0 -z 0.1 -R 0 -P 0 -Y 0"
 
         self._hz = rospy.get_param('~hz', 20)
@@ -181,9 +182,14 @@ class SimpleKeyTeleop():
             subprocess.call(self._init_cmd,shell=True)
             # self._flt_cmd.publish(Empty())
         elif keycode == ord('k'):
+            twist = self._get_twist(0,0,0,0)
+            self._pub_cmd.publish(twist)
+            self._auto_cmd.publish(Bool(True))
             self.manual_mode = False
         elif keycode == ord('m'):
             self.manual_mode = True
+            self._auto_cmd.publish(Bool(False))
+
 
         elif keycode in self.movement_bindings and self.manual_mode:
             self._last_pressed[keycode] = rospy.get_time()
@@ -209,7 +215,12 @@ class SimpleKeyTeleop():
             self._interface.write_line(7, 'Q to quit')
         self._interface.refresh()
 
-        twist = self._get_twist(self._linear_x, self._linear_y, self._linear_z, self._angular)
+
+        cmd_vels = [self._linear_x, self._linear_y, self._linear_z, self._angular]
+        if not self.manual_mode:
+            return
+            
+        twist = self._get_twist(*cmd_vels)
         self._pub_cmd.publish(twist)
 
 
