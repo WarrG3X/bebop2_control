@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+    <param name="drone_type" value="real"/> <!-- sphinx / real -->
+    <node pkg="bebop2_control" name="connect_driver_node" type="connect_driver" output="screen"/>
+</launch>
