@@ -26,8 +26,12 @@ rospy.init_node("sphinx_node")
 rospack = rospkg.RosPack()
 
 drone_path = os.path.join(rospack.get_path('bebop2_control'),"sphinx/bebop2.drone")
-world_path = os.path.join(rospack.get_path('bebop2_control'),"sphinx/empty.world")
+world_path = os.path.join(rospack.get_path('bebop2_control'),"sphinx/outdoor_1.world")
 
 launch_sphinx(world_path,drone_path)
+
+# Set Battery Decay to Zero
+batt_cmd = '''echo '{"jsonrpc": "2.0", "method": "SetParam", "params": {"machine":"bebop_a", "object":"lipobattery/lipobattery", "parameter":"discharge_speed_factor", "value":"0"}, "id": 1}' | curl -d @- http://localhost:8383 | python -m json.tool'''
+subprocess.call(batt_cmd,shell=True)
 
 rospy.spin()
